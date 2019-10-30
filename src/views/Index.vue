@@ -43,6 +43,18 @@
           </button>
         </div>
         <div
+          v-if="noHistory"
+          ref="messages-container"
+          class="content__messages"
+        >
+          <message
+            :system="true"
+            :time="startAt"
+            raw=" <b>История чата за текущий период отсутствует</b>"
+          />
+        </div>
+        <div
+          v-else
           ref="messages-container"
           class="content__messages"
         >
@@ -104,12 +116,43 @@ export default class Index extends Vue {
   private messages: MessageT[] = [];
   private startAtDate: string = '1970-01-01';
   private startAtTime: string = '03:00';
-  private time: number = 0;
+  private audioCurrentTime: number = 0;
+  private noHistory: boolean = false;
+
+  @Watch('audioCurrentTime')
+  async onAudioCurrentTimeChanged() {
+    if (this.messages.length === 0) return;
+
+    const timeBorderBottom: number = this.messages[0].time;
+    const timeBorderTop: number = this.messages[this.messages.length - 1].time;
+    if (this.time > timeBorderBottom || this.time < timeBorderTop) {
+      if (this.time > timeBorderBottom && this.time - timeBorderBottom < 5) {
+        await this.getHistory(false, this.time - 1);
+      } else {
+        this.messages = [];
+        await this.getHistory(true, this.time + 1);
+        await this.getHistory(false, this.time - 1);
+        this.messages.sort((a, b) => (a.time <= b.time ? 1 : -1));
+      }
+    }
+  }
 
   @Watch('selectedRecordId')
-  onRecordChanged() {
+  async onRecordChanged() {
     this.startAtDate = moment(this.selectedRecord.date).utcOffset('+03:00').format('YYYY-MM-DD');
     this.startAtTime = moment(this.selectedRecord.date).utcOffset('+03:00').format('HH:mm:ss');
+    this.noHistory = false;
+    this.messages = [];
+    if (this.selectedRecord.id === 0) {
+      this.noHistory = true;
+      return;
+    }
+    await this.getHistory(true, this.time);
+    if (this.messages.length !== 0) {
+      await this.getHistory(false, this.time);
+      return;
+    }
+    this.noHistory = true;
   }
 
   get selectedRecordId() {
@@ -121,24 +164,29 @@ export default class Index extends Vue {
   }
 
   get messagesVisible(): MessageT[] {
-    return this.messages.filter(m => m.time <= this.time).slice(-100);
+    return this.messages.filter(m => m.time <= this.time);
   }
 
   get startAt() {
     return new Date(`${this.startAtDate}T${this.startAtTime}`).getTime() / 1000;
   }
 
+  get time() {
+    return this.startAt + Math.trunc(this.audioCurrentTime);
+  }
+
   async created() {
     this.getCookiesMutation();
     await this.getRecords();
+    this.onRecordChanged();
     await this.$nextTick();
-    this.time = this.startAt;
-    await Promise.all([
-      this.getHistory(true, this.startAt),
-      this.getHistory(false, this.time),
-    ]);
-
     this.watchAudioTime();
+  }
+
+  watchAudioTime() {
+    setInterval(() => {
+      this.audioCurrentTime = this.audio.currentTime;
+    }, 1000);
   }
 
   async getRecords() {
@@ -159,35 +207,15 @@ export default class Index extends Vue {
     this.startAtTime = m.format('HH:mm:ss');
   }
 
-  watchAudioTime() {
-    setInterval(async () => {
-      this.time = this.startAt + Math.trunc(this.audio.currentTime);
-      const timeBorderBottom: number = this.messages[this.messages.length - 1].time;
-      const timeBorderTop: number = this.messages[0].time;
-      if (this.time > timeBorderBottom || this.time < timeBorderTop) {
-        if (this.time > timeBorderBottom && this.time - timeBorderBottom < 5) {
-          await this.getHistory(false, this.time - 1);
-        } else {
-          this.messages = [];
-          await this.getHistory(true, this.time + 1);
-          await this.getHistory(false, this.time - 1);
-          this.messages.sort((a, b) => (a.time > b.time ? 1 : -1));
-        }
-      }
-      await this.$nextTick();
-      this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-    }, 500);
-  }
-
   async getHistory(reverse: boolean, time: number) {
     const response = await api.getMessages({ reverse, time });
     if (response) {
       response.data.forEach((message: MessageT) => {
         if (!this.messages.find(m => m.id === message.id)) {
           if (reverse) {
-            this.messages.unshift(message);
-          } else {
             this.messages.push(message);
+          } else {
+            this.messages.unshift(message);
           }
         }
       });
