@@ -206,7 +206,7 @@ export default class Index extends Vue {
         time: 0,
       };
     }
-    let played = this.time - this.tracks[0].time;
+    let played = this.time ? this.time - this.tracks[0].time : 0;
     if (this.tracks[0].duration < played) {
       played = this.tracks[0].duration;
     }
