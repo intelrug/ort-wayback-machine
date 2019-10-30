@@ -118,9 +118,9 @@ export default class Index extends Vue {
   @Ref() audio!: HTMLAudioElement;
   @Ref('messages-container') messagesContainer!: HTMLElement;
 
-  @State((s: StateT) => s.records) records!: RecordT[];
   @State((s: StateT) => s.tracks) tracks!: TrackT[];
   @State((s: StateT) => s.selectedRecordId) selectedRecordIdState!: number;
+  @Getter('records') records!: RecordT[];
   @Getter('selectedRecord') selectedRecord!: RecordT;
   @Mutation('getCookies') getCookiesMutation!: Function;
   @Mutation('selectRecord') selectRecordMutation!: Function;

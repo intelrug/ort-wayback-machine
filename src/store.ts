@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import Vuex, { ActionTree, GetterTree, MutationTree } from 'vuex';
 import Cookies from 'js-cookie';
+import moment from 'moment';
 import StateT from '@/types/StateT';
 import api from '@/plugins/api';
 import RecordT from '@/types/RecordT';
@@ -41,6 +42,15 @@ const getters: GetterTree<StateT, StateT> = {
       || {
         id: 0, name: 'Выберите запись...', src: '', date: '1970-01-01T00:00:00.000Z',
       };
+  },
+  records(s): RecordT[] {
+    return s.records
+      .map((r) => {
+        const date: string = moment(r.date).format('DD.MM.YYYY');
+        r.name = `${date} ${r.name}`;
+        return r;
+      })
+      .sort((a, b) => (new Date(a.date).getTime() - new Date(b.date).getTime()));
   },
 };
 
