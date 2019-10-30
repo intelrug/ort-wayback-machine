@@ -46,7 +46,7 @@
           v-if="track"
           class="content__track"
         >
-          Текущая песня:
+          Текущий трэк:
           <span class="content__track-name">{{ track.raw_line }} [{{ track.played | seconds }} / {{ track.duration | seconds }}]</span>
         </div>
         <div
