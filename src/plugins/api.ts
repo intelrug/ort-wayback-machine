@@ -21,4 +21,9 @@ export default class API {
     return http.get('/messages', { params: options })
       .catch(console.log);
   }
+
+  static getTracks(options: {before: number}) {
+    return http.get('https://andreymal.org/cgi-bin/radio_now.py', { params: { history: 'ORT', ...options } })
+      .catch(console.log);
+  }
 }

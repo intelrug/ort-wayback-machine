@@ -9,6 +9,7 @@ Vue.use(Vuex);
 
 const state: StateT = {
   records: [],
+  tracks: [],
   selectedRecordId: 0,
 };
 
@@ -28,6 +29,10 @@ const mutations: MutationTree<StateT> = {
     s.selectedRecordId = id;
     Cookies.set('selectedRecordId', id, { expires: 3650 });
   },
+
+  setTracks(s, tracks) {
+    s.tracks = tracks;
+  },
 };
 
 const getters: GetterTree<StateT, StateT> = {
@@ -44,6 +49,13 @@ const actions: ActionTree<StateT, StateT> = {
     const response = await api.getRecords();
     if (response) {
       commit('setRecords', response.data);
+    }
+  },
+
+  async getTracks({ commit }, before: number) {
+    const response = await api.getTracks({ before });
+    if (response) {
+      commit('setTracks', response.data.history);
     }
   },
 };

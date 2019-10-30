@@ -43,6 +43,13 @@
           </button>
         </div>
         <div
+          v-if="track"
+          class="content__track"
+        >
+          Текущая песня:
+          <span class="content__track-name">{{ track.raw_line }} [{{ track.played | seconds }} / {{ track.duration | seconds }}]</span>
+        </div>
+        <div
           v-if="noHistory"
           ref="messages-container"
           class="content__messages"
@@ -88,6 +95,7 @@ import api from '@/plugins/api';
 import StateT from '@/types/StateT';
 import RecordT from '@/types/RecordT';
 import Select2 from '@/components/Select2.vue';
+import TrackT from '@/types/TrackT';
 
 @Component({
   components: {
@@ -107,11 +115,13 @@ export default class Index extends Vue {
   @Ref('messages-container') messagesContainer!: HTMLElement;
 
   @State((s: StateT) => s.records) records!: RecordT[];
+  @State((s: StateT) => s.tracks) tracks!: TrackT[];
   @State((s: StateT) => s.selectedRecordId) selectedRecordIdState!: number;
   @Getter('selectedRecord') selectedRecord!: RecordT;
   @Mutation('getCookies') getCookiesMutation!: Function;
   @Mutation('selectRecord') selectRecordMutation!: Function;
   @Action('getRecords') getRecordsAction!: Function;
+  @Action('getTracks') getTracksAction!: Function;
 
   private messages: MessageT[] = [];
   private startAtDate: string = '1970-01-01';
@@ -135,12 +145,20 @@ export default class Index extends Vue {
         this.messages.sort((a, b) => (a.time <= b.time ? 1 : -1));
       }
     }
+
+    if (this.time >= this.track.time + this.track.duration) {
+      this.getTracksAction(this.time + 1);
+    }
+    if (this.time < this.track.time) {
+      this.getTracksAction(this.time);
+    }
   }
 
   @Watch('selectedRecordId')
   async onRecordChanged() {
     this.startAtDate = moment(this.selectedRecord.date).utcOffset('+03:00').format('YYYY-MM-DD');
     this.startAtTime = moment(this.selectedRecord.date).utcOffset('+03:00').format('HH:mm:ss');
+    this.getTracksAction(this.startAt);
     this.noHistory = false;
     this.messages = [];
     if (this.selectedRecord.id === 0) {
@@ -173,6 +191,25 @@ export default class Index extends Vue {
 
   get time() {
     return this.startAt + Math.trunc(this.audioCurrentTime);
+  }
+
+  get track() {
+    if (!this.tracks[0]) {
+      return {
+        raw_line: '',
+        duration: 0,
+        played: 0,
+        time: 0,
+      };
+    }
+    let played = this.time - this.tracks[0].time;
+    if (this.tracks[0].duration < played) {
+      played = this.tracks[0].duration;
+    }
+    if (played < 0) {
+      played = 0;
+    }
+    return { ...this.tracks[0], played };
   }
 
   async created() {
