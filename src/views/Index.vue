@@ -29,25 +29,29 @@
               step="1"
             >
           </div>
-          <button
-            class="content__offset-button"
-            @click="timeOffset(-10)"
-          >
-            -10
-          </button>
-          <button
-            class="content__offset-button"
-            @click="timeOffset(10)"
-          >
-            +10
-          </button>
+          <div class="content__offset">
+            <button
+              class="content__offset-button"
+              @click="timeOffset(-10)"
+            >
+              -10
+            </button>
+            <button
+              class="content__offset-button"
+              @click="timeOffset(10)"
+            >
+              +10
+            </button>
+          </div>
         </div>
-        <div
-          v-if="track"
-          class="content__track"
-        >
-          Текущий трэк:
-          <span class="content__track-name">{{ track.raw_line }} [{{ track.played | seconds }} / {{ track.duration | seconds }}]</span>
+        <div class="content__track-container">
+          <div
+            v-if="track"
+            class="content__track"
+          >
+            Текущий трэк:
+            <span class="content__track-name">{{ track.raw_line }} [{{ track.played | seconds }}&nbsp;/&nbsp;{{ track.duration | seconds }}]</span>
+          </div>
         </div>
         <div
           v-if="noHistory"
