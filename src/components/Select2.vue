@@ -71,7 +71,7 @@ export default class Select2 extends Vue {
     this.refOptions.style.display = 'none';
     setTimeout(() => {
       this.refOptions.style.display = '';
-    }, 100);
+    }, 500);
   }
 
   arrowUp() {
