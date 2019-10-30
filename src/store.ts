@@ -46,7 +46,7 @@ const getters: GetterTree<StateT, StateT> = {
   records(s): RecordT[] {
     return s.records
       .map((r) => {
-        const date: string = moment(r.date).format('DD.MM.YYYY');
+        const date: string = moment(r.date).utcOffset('+03:00').format('DD.MM.YYYY');
         r.name = `${date} ${r.name}`;
         return r;
       })
